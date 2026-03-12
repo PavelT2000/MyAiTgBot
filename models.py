@@ -12,6 +12,7 @@ class AIContext(BaseModel):
         "effective_triggers": [],
         "strategic_notes": ""
     })
+    chat_history: list[dict]=[]
     next_contact_time: Optional[str] = None
     is_waiting_contact: bool = False
     dynamic_data: Dict[str, Any] = Field(default_factory=dict)

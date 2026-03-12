@@ -76,3 +76,26 @@ UPDATE_KNOWLEDGE_TOOL = {
         "required": ["updates"]
     }
 }
+
+SCHEDULE_REMINDER_TOOL = {
+    "name": "schedule_reminder",
+    "description": "Запланировать отправку сообщения пользователю через определенное время, чтобы продолжить диалог или проверить прогресс.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "message": {
+                "type": "string",
+                "description": "Текст сообщения, которое нужно отправить пользователю позже."
+            },
+            "delay_minutes": {
+                "type": "integer",
+                "description": "Через сколько минут отправить сообщение (например, 30, 60, 1440)."
+            },
+            "context_note": {
+                "type": "string",
+                "description": "Краткая заметка для себя, о чем будет этот контакт (например, 'спросить про яблоки')."
+            }
+        },
+        "required": ["message", "delay_minutes"]
+    }
+}

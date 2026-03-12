@@ -1,10 +1,12 @@
 import asyncio
 import os
 import sys
+import scheduler_config
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from dotenv import load_dotenv
-from legacy.ai_agent import process_user_message
+from process_user_message import process_user_message
+from logger_config import setup_logging
 
 load_dotenv()
 
@@ -39,8 +41,20 @@ async def message_handler(message: types.Message):
     
     await message.answer(ai_response)
 
+async def scheduled_send_handler(user_id: int, text: str):
+    """Реальная отправка сообщения через объект bot"""
+    try:
+        await bot.send_message(chat_id=user_id, text=text)
+        print(f"🔔 Сообщение по расписанию отправлено для {user_id}")
+    except Exception as e:
+        print(f"❌ Ошибка отправки по расписанию: {e}")
+
 async def main():
     """Запуск бота."""
+    setup_logging()
+    scheduler_config.send_planned_message=scheduled_send_handler
+    scheduler_config.scheduler.start()
+    print("📅 Планировщик запущен")
     print("🤖 Бот запущен...")
     await dp.start_polling(bot)
 
