@@ -4,7 +4,7 @@ import sys
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from dotenv import load_dotenv
-from ai_agent import process_user_message
+from legacy.ai_agent import process_user_message
 
 load_dotenv()
 

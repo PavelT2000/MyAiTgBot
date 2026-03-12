@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 
 class AIContext(BaseModel):
     core_objective: str = "Улучшить жизнь пользователя"
@@ -12,12 +12,8 @@ class AIContext(BaseModel):
         "effective_triggers": [],
         "strategic_notes": ""
     })
-    # --- НОВЫЕ ПОЛЯ ---
-    # Время следующего запланированного контакта (ISO string)
     next_contact_time: Optional[str] = None
-    # Флаг, указывающий, нужно ли боту инициировать диалог
     is_waiting_contact: bool = False
-    # ------------------
     dynamic_data: Dict[str, Any] = Field(default_factory=dict)
 
 class UserDocument(BaseModel):

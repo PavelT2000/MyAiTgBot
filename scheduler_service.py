@@ -2,7 +2,7 @@ import asyncio
 import logging
 from datetime import datetime
 from database import users_collection
-from ai_agent import process_user_message
+from legacy.ai_agent import process_user_message
 from bot import bot
 
 # Настройка логирования

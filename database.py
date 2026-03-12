@@ -1,13 +1,13 @@
 import os
+import logging
 from motor.motor_asyncio import AsyncIOMotorClient
 from models import UserDocument, AIContext
+from config import MONGO_URL, MONGO_DB_NAME
 
-# В будущем вынесем в .env
-MONGO_URL = "mongodb://localhost:27017" 
-DB_NAME = "ai_lifestyle_bot"
+logger = logging.getLogger('database')
 
 client = AsyncIOMotorClient(MONGO_URL)
-db = client[DB_NAME]
+db = client[MONGO_DB_NAME]
 users_collection = db["users"]
 
 async def get_or_create_user(tg_id: int, username: str | None = None) -> UserDocument:
@@ -30,3 +30,5 @@ async def save_user_context(tg_id: int, context: AIContext):
         {"_id": tg_id},
         {"$set": {"ai_context": context.model_dump()}}
     )
+    context_str = str(context.model_dump())
+    logger.info("💾 Контекст сохранен для %s: %s...",tg_id,context_str[:50])
