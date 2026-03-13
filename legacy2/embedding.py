@@ -4,7 +4,7 @@ module that afford embed(vectorize) text and facts
 from datetime import datetime
 import httpx
 import numpy as np
-from config import config
+from src.config import config
 
 async def get_embedding(text: str):
     """Получает вектор из фразы"""

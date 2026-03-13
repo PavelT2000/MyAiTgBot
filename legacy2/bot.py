@@ -5,9 +5,10 @@ import asyncio
 from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
-import scheduler_config
+import scheduler
 from config import config
 from logger_config import setup_logging
+from silence_checker import reset_silence_timer
 
 # Заглушка вместо реального вызова ИИ
 async def process_user_message_stub(user_id: int, text: str) -> str:
@@ -48,26 +49,8 @@ async def message_handler(message: types.Message):
     tg_id = message.from_user.id
     user_text = message.text
 
-    # --- ЛОГИКА ТАЙМЕРА ТИШИНЫ ---
-    job_id = f"silence_watch_{tg_id}"
+    await reset_silence_timer(tg_id)
 
-    # 1. Удаляем предыдущую задачу, если она была (сброс таймера)
-    if scheduler_config.scheduler.get_job(job_id):
-        scheduler_config.scheduler.remove_job(job_id)
-        print(f"⏱ Таймер тишины для {tg_id} сброшен.")
-
-    # 2. Ставим новую задачу на +10 минут от текущего момента
-    run_at = datetime.now() + timedelta(minutes=10)
-    scheduler_config.scheduler.add_job(
-        check_silence_handler,
-        'date',
-        run_date=run_at,
-        args=[tg_id],
-        id=job_id,
-        replace_existing=True
-    )
-    print(f"⏱ Новый таймер тишины установлен на {run_at.strftime('%H:%M:%S')}")
-    # -----------------------------
 
     await bot.send_chat_action(message.chat.id, "typing")
 
@@ -89,10 +72,10 @@ async def main():
     setup_logging()
 
     # Регистрируем обработчик для scheduler_config
-    scheduler_config.planned_message_handler = scheduled_send_handler
+    scheduler.planned_message_handler = scheduled_send_handler
 
     # Запускаем планировщик
-    scheduler_config.scheduler.start()
+    scheduler.scheduler.start()
 
     print("📅 Планировщик запущен")
     print("🤖 Бот запущен...")

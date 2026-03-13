@@ -6,7 +6,6 @@ import logging
 import httpx
 from embedding import get_embedding
 from config import config
-from scheduler_config import send_planned_message, scheduler
 
 proxy_logger=logging.getLogger('proxy')
 
