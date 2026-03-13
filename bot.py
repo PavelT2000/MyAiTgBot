@@ -1,22 +1,15 @@
+"""
+Main module that starts bot
+"""
 import asyncio
-import os
-import sys
-import scheduler_config
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
-from dotenv import load_dotenv
+import scheduler_config
+from config  import config
 from process_user_message import process_user_message
 from logger_config import setup_logging
 
-load_dotenv()
-
-# 1. Исправляем ошибку с токеном
-TOKEN = os.getenv("TELEGRAM_TOKEN")
-if not TOKEN:
-    print("❌ ОШИБКА: TELEGRAM_TOKEN не найден в файле .env")
-    sys.exit(1)
-
-bot = Bot(token=TOKEN)
+bot = Bot(token=config.telegram_token)
 dp = Dispatcher()
 
 @dp.message(Command("start"))
@@ -32,13 +25,10 @@ async def message_handler(message: types.Message):
         return
 
     await bot.send_chat_action(message.chat.id, "typing")
-    
     tg_id = message.from_user.id
     user_text = message.text
-    
     # Теперь Pylance спокоен: tg_id — это int, user_text — это str
     ai_response = await process_user_message(tg_id, user_text)
-    
     await message.answer(ai_response)
 
 async def scheduled_send_handler(user_id: int, text: str):

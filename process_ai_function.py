@@ -1,19 +1,25 @@
-import httpx
-import logging
-from embedding import get_embedding
+"""
+Module that interacts with ai api
+"""
 from datetime import datetime, timedelta
-from config import API_CHAT_URL
+import logging
+import httpx
+from embedding import get_embedding
+from config import config
 from scheduler_config import send_planned_message, scheduler
 
 proxy_logger=logging.getLogger('proxy')
 
 async def process_ai_function(payload, context, user_id):
+    """
+    procesing function of ai
+    """
     async with httpx.AsyncClient(trust_env=False) as client:
-        proxy_logger.info("🚀 Запрос на прокси: %s", API_CHAT_URL)
-        response = await client.post(API_CHAT_URL, json=payload, timeout=30.0)
+        proxy_logger.info("🚀 Запрос на прокси: %s", config.api_chat_url)
+        response = await client.post(config.api_chat_url, json=payload, timeout=30.0)
         response.raise_for_status()
         result = response.json()
-    
+
     has_functions = False
     if result.get("function_calls"):
         has_functions = True
@@ -38,7 +44,8 @@ async def process_ai_function(payload, context, user_id):
                     'date',
                     run_date=run_at,
                     args=[user_id, args.get("message")],
-                    id=f"remind_{user_id}", # Один юзер — одна активная напоминалка (перезаписывает старую)
+                    # Один юзер — одна активная напоминалка (перезаписывает старую)
+                    id=f"remind_{user_id}",
                     replace_existing=True
                 )
                 print(f"📅 Запланировано: {args.get('message')} на {run_at}")

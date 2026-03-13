@@ -1,10 +1,22 @@
-import os
-from dotenv import load_dotenv
+"""
+Module that config app from .env
+"""
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-load_dotenv()
-PROXY_URL = os.getenv("PROXY_URL")
-API_CHAT_URL=str(os.getenv("API_CHAT_URL"))
-EMBED_URL=str(os.getenv("EMBED_URL"))
-MONGO_URL = os.getenv("MONGO_URL")
-MONGO_DB_NAME = str(os.getenv("MONGO_DB_NAME"))
-TELEGRAM_TOKEN=os.getenv("TELEGRAM_TOKEN")
+class Settings(BaseSettings):
+    """
+    Настройки приложения, загружаемые из переменных окружения или файла .env.
+    """
+    telegram_token: str = ... # type: ignore
+    api_chat_url: str = ... # type: ignore
+    embed_url: str = ... # type: ignore
+    mongo_url: str = ... # type: ignore
+    mongo_db_name: str = ... # type: ignore
+    proxy_url: str | None = None
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        extra="ignore"
+    )
+
+config: Settings = Settings()
