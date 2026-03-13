@@ -1,38 +1,83 @@
 """
-Main module that starts bot
+Main module that starts bot and tracks user silence.
 """
 import asyncio
+from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 import scheduler_config
-from config  import config
-from process_user_message import process_user_message
+from config import config
 from logger_config import setup_logging
+
+# Заглушка вместо реального вызова ИИ
+async def process_user_message_stub(user_id: int, text: str) -> str:
+    """Заглушка для обработки сообщений ИИ."""
+    if "[SYSTEM_SILENCE_10M]" in text:
+        return "Прошло 10 минут тишины. Я решил напомнить о себе! О чем думаешь?"
+    return f"Эхо-ответ на: {text}"
 
 bot = Bot(token=config.telegram_token)
 dp = Dispatcher()
 
+async def check_silence_handler(user_id: int):
+    """
+    Вызывается автоматически через 10 минут тишины пользователя.
+    """
+    print(f"🕵️ Пользователь {user_id} молчит 10 минут. Запрашиваем реакцию ИИ...")
+
+    # Вызываем ИИ с системной пометкой
+    ai_response = await process_user_message_stub(user_id, "[SYSTEM_SILENCE_10M]")
+
+    if ai_response:
+        try:
+            await bot.send_message(chat_id=user_id, text=ai_response)
+        except Exception as e:
+            print(f"❌ Не удалось отправить сообщение тишины: {e}")
+
 @dp.message(Command("start"))
 async def start_handler(message: types.Message):
     """Приветственное сообщение."""
-    await message.answer("Привет! Я     твой самообучающийся ИИ-агент. Напиши мне что-нибудь.")
+    await message.answer("Привет! Я слежу за нашим диалогом. Если ты замолчишь на 10 минут, я попробую продолжить сам.")
 
 @dp.message()
 async def message_handler(message: types.Message):
     """Основной обработчик сообщений."""
-    # 2. Исправляем ошибку с None в id и тексте
     if not message.from_user or not message.text:
         return
 
-    await bot.send_chat_action(message.chat.id, "typing")
     tg_id = message.from_user.id
     user_text = message.text
-    # Теперь Pylance спокоен: tg_id — это int, user_text — это str
-    ai_response = await process_user_message(tg_id, user_text)
+
+    # --- ЛОГИКА ТАЙМЕРА ТИШИНЫ ---
+    job_id = f"silence_watch_{tg_id}"
+
+    # 1. Удаляем предыдущую задачу, если она была (сброс таймера)
+    if scheduler_config.scheduler.get_job(job_id):
+        scheduler_config.scheduler.remove_job(job_id)
+        print(f"⏱ Таймер тишины для {tg_id} сброшен.")
+
+    # 2. Ставим новую задачу на +10 минут от текущего момента
+    run_at = datetime.now() + timedelta(minutes=10)
+    scheduler_config.scheduler.add_job(
+        check_silence_handler,
+        'date',
+        run_date=run_at,
+        args=[tg_id],
+        id=job_id,
+        replace_existing=True
+    )
+    print(f"⏱ Новый таймер тишины установлен на {run_at.strftime('%H:%M:%S')}")
+    # -----------------------------
+
+    await bot.send_chat_action(message.chat.id, "typing")
+
+    # Вызов заглушки (в будущем замени на реальный process_user_message)
+    ai_response = await process_user_message_stub(tg_id, user_text)
+
     await message.answer(ai_response)
 
 async def scheduled_send_handler(user_id: int, text: str):
-    """Реальная отправка сообщения через объект bot"""
+    """Реальная отправка сообщения через объект bot (для других напоминаний)"""
     try:
         await bot.send_message(chat_id=user_id, text=text)
         print(f"🔔 Сообщение по расписанию отправлено для {user_id}")
@@ -42,8 +87,13 @@ async def scheduled_send_handler(user_id: int, text: str):
 async def main():
     """Запуск бота."""
     setup_logging()
-    scheduler_config.send_planned_message=scheduled_send_handler
+
+    # Регистрируем обработчик для scheduler_config
+    scheduler_config.planned_message_handler = scheduled_send_handler
+
+    # Запускаем планировщик
     scheduler_config.scheduler.start()
+
     print("📅 Планировщик запущен")
     print("🤖 Бот запущен...")
     await dp.start_polling(bot)
